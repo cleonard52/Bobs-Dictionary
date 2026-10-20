@@ -1,1 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Tower Stacker</title>
+    <!-- Include Matter.js for realistic physics -->
+    <script src="https://cloudflare.com"></script>
+    <style>
+        body {
+            margin: 0;
+            background-color: #1a1a2e;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin: 5px 0;
+            font-size: 2rem;
+            color: #4ecca3;
+            text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+        }
+
+        #ui {
+            display: flex;
+            justify-content: space-between;
+            width: 450px;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        #game-container {
+            position: relative;
+            border: 4px solid #4ecca3;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        #overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.85);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        #overlay h2 {
+            color: #ff4a5a;
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        #restart-btn {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            margin-top: 15px;
+        }
+
+        #restart-btn:hover {
+            background: #3db892;
+            transform: scale(1.05);
+        }
+
+        .instructions {
+            margin-top: 10px;
+            color: #a0a0ba;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>TOWER STACKER</h1>
+    <div id="ui">
+        <div id="score">Height: 0m</div>
+        <div id="high-score">Best: 0m</div>
+    </div>
+
+    <div id="game-container">
+        <div id="overlay">
+            <h2>GAME OVER</h2>
+            <div id="final-score" style="font-size: 1.4rem;">Final Height: 0m</div>
+            <button id="restart-btn" onclick="resetGame()">Stack Again</button>
+        </div>
+    </div>
+
+    <div class="instructions">
+        Move mouse/finger to aim. <b>Click / Tap</b> to drop a block!<br>
+        If any block falls into the abyss, you lose.
+    </div>
+
+    <script>
+        // Module aliases
+        const { Engine, Render, Runner, Bodies, Composite, Body } = Matter;
+
+        // Game constants & variables
+        const WIDTH = 450;
+        const HEIGHT = 600;
+        const GROUND_Y = 550;
+        
+        let engine, render, runner;
+        let blocks = [];
+        let currentBlock = null;
+        let score = 0;
+        let highScore = localStorage.getItem('stackerHighScore') || 0;
+        let isGameOver = false;
+        let mouseX = WIDTH / 2;
+
+        const container = document.getElementById('game-container');
+        const scoreEl = document.getElementById('score');
+        const highScoreEl = document.getElementById('high-score');
+        const overlay = document.getElementById('overlay');
+        const finalScoreEl = document.getElementById('final-score');
+
+        highScoreEl.innerText = `Best: ${highScore}m`;
+
+        function init() {
+            // 1. Create engine & world
+            engine = Engine.create({ gravity: { y: 1.5 } });
+
+            // 2. Create renderer
+            render = Render.create({
+                element: container,
+                engine: engine,
+                options: {
+                    width: WIDTH,
+                    height: HEIGHT,
+                    wireframes: false,
+                    background: '#232946'
+                }
+            });
+            Render.run(render);
+
+            // 3. Run the engine
+            runner = Runner.create();
+            Runner.run(runner, engine);
+
+            // 4. Add the foundational ground platform
+            const ground = Bodies.rectangle(WIDTH / 2, GROUND_Y, 200, 20, {
+                isStatic: true,
+                render: { fillStyle: '#b8c1ec' }
+            });
+            Composite.add(engine.world, ground);
+
+            // 5. Spawn our first predictive floating block
+            spawnNextBlock();
+
+            // 6. Hook up tracking loops
+            Matter.Events.on(engine, 'afterUpdate', gameLoop);
+            setupControls();
+        }
+
+        function spawnNextBlock() {
+            if (isGameOver) return;
+
+            // Generate a random width and height for architectural variety
+            const w = Math.random() * 40 + 40; 
+            const h = Math.random() * 20 + 30;
+            
+            // Generate a vibrant random color palette
+            const hues =;
+            const randomColor = `hsl(${hues[Math.floor(Math.random() * hues.length)]}, 80%, 60%)`;
+
+            // This block is static initially so it hovers with the mouse
+            currentBlock = Bodies.rectangle(mouseX, 80, w, h, {
+                isStatic: true,
+                friction: 0.4,
+                restitution: 0.1,
+                render: { fillStyle: randomColor }
+            });
+
+            Composite.add(engine.world, currentBlock);
+        }
+
+        function setupControls() {
+            // Track mouse movements to position the hovering block
+            window.addEventListener('mousemove', (e) => {
+                const rect = render.canvas.getBoundingClientRect();
+                mouseX = e.clientX - rect.left;
+                // Keep inside canvas bounds
+                if (mouseX < 0) mouseX = 0;
+                if (mouseX > WIDTH) mouseX = WIDTH;
+
+                if (currentBlock && currentBlock.isStatic && !isGameOver) {
+                    Body.setPosition(currentBlock, { x: mouseX, y: currentBlock.position.y });
+                }
+            });
+
+            // Tap/Click to release the active block
+            container.addEventListener('mousedown', () => {
+                if (currentBlock && currentBlock.isStatic && !isGameOver) {
+                    // Turn physics back on by removing the static tag
+                    Body.setStatic(currentBlock, false);
+                    blocks.push(currentBlock);
+                    currentBlock = null;
+
+                    // Delay spawning the next block slightly to prevent double drops
+                    setTimeout(spawnNextBlock, 800);
+                }
+            });
+
+            // Mobile touch compatibility
+            container.addEventListener('touchstart', (e) => {
+                const rect = render.canvas.getBoundingClientRect();
+                mouseX = e.touches[0].clientX - rect.left;
+                if (currentBlock && currentBlock.isStatic && !isGameOver) {
+                    Body.setPosition(currentBlock, { x: mouseX, y: currentBlock.position.y });
+                    Body.setStatic(currentBlock, false);
+                    blocks.push(currentBlock);
+                    currentBlock = null;
+                    setTimeout(spawnNextBlock, 800);
+                }
+            });
+        }
+
+        function gameLoop() {
+            if (isGameOver) return;
+
+            let highestPoint = GROUND_Y;
+
+            // Analyze every dropped block
+            for (let i = 0; i < blocks.length; i++) {
+                const block = blocks[i];
+
+                // CRITICAL RULE: If any block tumbles past the canvas floor, you lose!
+                if (block.position.y > HEIGHT + 50) {
+                    triggerGameOver();
+                    return;
+                }
+
+                // If block is safe and stable, check if it extends the stack height
+                if (block.position.y < highestPoint) {
+                    highestPoint = block.position.y;
+                }
+            }
+
+            // Calculate height in "meters" relative upward from the base platform
+            let currentHeight = Math.max(0, Math.round((GROUND_Y - 10) - highestPoint));
+            score = currentHeight;
+            scoreEl.innerText = `Height: ${score}m`;
+        }
+
+        function triggerGameOver() {
+            isGameOver = true;
+            overlay.style.display = 'flex';
+            finalScoreEl.innerText = `Final Height: ${score}m`;
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('stackerHighScore', highScore);
+                highScoreEl.innerText = `Best: ${highScore}m`;
+            }
+        }
+
+        function resetGame() {
+            // Completely wipe the world clear
+            Composite.clear(engine.world, false);
+            blocks = [];
+            currentBlock = null;
+            score = 0;
+            scoreEl.innerText = `Height: 0m`;
+            isGameOver = false;
+            overlay.style.display = 'none';
+
+            // Re-add baseline ground
+            const ground = Bodies.rectangle(WIDTH / 2, GROUND_Y, 200, 20, {
+                isStatic: true,
+                render: { fillStyle: '#b8c1ec' }
+            });
+            Composite.add(engine.world, ground);
+            
+            spawnNextBlock();
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
 
