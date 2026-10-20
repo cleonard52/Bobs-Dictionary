@@ -1,17 +1,29 @@
+Here is the complete, inline code for your Bioluminescent Overgrowth Tower Stacker.
+This version includes a true parallax background layer that automatically shifts down as your architecture expands upward, creating a gorgeous sense of climbing up an enchanted forest canopy. The bootstrap logic has been safely wrapped inside a secure loading event hook to guarantee the physics runtime fires up flawlessly.
+
+index.html
+
+html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Physics Tower Stacker</title>
-    <!-- Include Matter.js for realistic physics -->
+    <title>Bioluminescent Infinite Canopy Stacker</title>
+    <!-- Include Matter.js for physics simulation -->
     <script src="https://cloudflare.com"></script>
     <style>
+        :root {
+            --glow-color: #39ff14;
+            --perfect-glow: #00f0ff;
+            --fail-glow: #ff0055;
+        }
+
         body {
             margin: 0;
-            background-color: #1a1a2e;
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #050b0a;
+            color: #e2f1e4;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -20,27 +32,106 @@
             overflow: hidden;
         }
 
+        /* Parallax Background Layer moving downward as you ascend */
+        #bg-parallax {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            background: linear-gradient(180deg, #091a15 0%, #050b0a 70%, #020504 100%);
+            transition: background-position 0.1s linear;
+        }
+
+        /* Micro-spore particles floating behind the game arena */
+        .spore {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--glow-color);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--glow-color);
+            opacity: 0.25;
+            animation: floatAmbient 12s infinite ease-in-out;
+        }
+
+        @keyframes floatAmbient {
+            0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.2; }
+            50% { transform: translate(30px, -50px) scale(1.3); opacity: 0.5; }
+        }
+
         h1 {
             margin: 5px 0;
-            font-size: 2rem;
-            color: #4ecca3;
-            text-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+            font-size: 2.2rem;
+            letter-spacing: 3px;
+            color: #ffffff;
+            text-shadow: 0 0 12px var(--glow-color), 0 0 25px rgba(57, 255, 20, 0.4);
+            z-index: 2;
+            font-weight: 800;
         }
 
         #ui {
             display: flex;
             justify-content: space-between;
             width: 450px;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
+            font-size: 1.25rem;
+            margin-bottom: 12px;
             font-weight: bold;
+            z-index: 2;
+            letter-spacing: 0.5px;
+        }
+
+        #score {
+            color: #fff;
+            text-shadow: 0 0 8px var(--glow-color);
+        }
+
+        #high-score {
+            color: #00f0ff;
+            text-shadow: 0 0 8px #00f0ff;
         }
 
         #game-container {
             position: relative;
-            border: 4px solid #4ecca3;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 4px solid var(--glow-color);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.35), inset 0 0 20px rgba(57, 255, 20, 0.15);
+            z-index: 2;
+            background: #070e0c;
+            overflow: hidden;
+        }
+
+        #game-container canvas {
+            display: block;
+            filter: drop-shadow(0px 0px 10px rgba(57, 255, 20, 0.25));
+        }
+
+        #bonus-popups {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 5;
+        }
+
+        .perfect-text {
+            position: absolute;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px var(--perfect-glow), 0 0 20px var(--perfect-glow), 0 0 30px #fff;
+            animation: sproutFloat 1.1s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes sproutFloat {
+            0% { transform: translateY(30px) scale(0.6); opacity: 0; }
+            25% { transform: translateY(0) scale(1.2); opacity: 1; }
+            100% { transform: translateY(-60px) scale(0.9); opacity: 0; }
         }
 
         #overlay {
@@ -50,96 +141,130 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(26, 26, 46, 0.85);
+            background: rgba(4, 9, 8, 0.93);
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 4px;
+            z-index: 10;
+            backdrop-filter: blur(5px);
         }
 
         #overlay h2 {
-            color: #ff4a5a;
-            font-size: 3rem;
-            margin-bottom: 10px;
+            color: #fff;
+            font-size: 3.2rem;
+            margin-bottom: 5px;
+            font-weight: 900;
+            text-shadow: 0 0 15px var(--fail-glow), 0 0 25px var(--fail-glow);
         }
 
         #restart-btn {
-            background: #4ecca3;
-            color: #1a1a2e;
+            background: linear-gradient(45deg, var(--glow-color), #85ff66);
+            color: #040908;
             border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-radius: 25px;
+            padding: 14px 38px;
+            font-size: 1.15rem;
+            font-weight: 900;
+            border-radius: 30px;
             cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-            margin-top: 15px;
+            box-shadow: 0 0 20px var(--glow-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 20px;
         }
 
         #restart-btn:hover {
-            background: #3db892;
-            transform: scale(1.05);
+            transform: scale(1.06);
+            box-shadow: 0 0 30px #85ff66;
+            background: linear-gradient(45deg, #85ff66, var(--perfect-glow));
         }
 
         .instructions {
-            margin-top: 10px;
-            color: #a0a0ba;
-            font-size: 0.9rem;
+            margin-top: 15px;
+            color: #5c746d;
+            font-size: 0.95rem;
             text-align: center;
+            z-index: 2;
+        }
+        
+        .instructions b {
+            color: var(--glow-color);
         }
     </style>
 </head>
 <body>
 
-    <h1>TOWER STACKER</h1>
+    <div id="bg-parallax"></div>
+
+    <h1>CANOPY STACKER</h1>
     <div id="ui">
-        <div id="score">Height: 0m</div>
-        <div id="high-score">Best: 0m</div>
+        <div id="score">ALTITUDE: 0m</div>
+        <div id="high-score">BEST: 0m</div>
     </div>
 
     <div id="game-container">
+        <div id="bonus-popups"></div>
         <div id="overlay">
-            <h2>GAME OVER</h2>
-            <div id="final-score" style="font-size: 1.4rem;">Final Height: 0m</div>
-            <button id="restart-btn" onclick="resetGame()">Stack Again</button>
+            <h2>TOWER COLLAPSED</h2>
+            <div id="final-score" style="font-size: 1.4rem; color: #a4b8b2;">Final Altitude: 0m</div>
+            <button id="restart-btn" onclick="resetGame()">GROW AGAIN</button>
         </div>
     </div>
 
     <div class="instructions">
-        Move mouse/finger to aim. <b>Click / Tap</b> to drop a block!<br>
-        If any block falls into the abyss, you lose.
+        Guide the seed pod using your cursor. <b>Click / Tap</b> to drop a moss module.<br>
+        Center perfectly on the stack for a <b>🌱 SPROUT ENERGY HYPER-GLOW (+5m)</b>
     </div>
 
     <script>
-        // Module aliases
-        const { Engine, Render, Runner, Bodies, Composite, Body } = Matter;
+        const { Engine, Render, Runner, Bodies, Composite, Body, Bounds } = Matter;
 
-        // Game constants & variables
         const WIDTH = 450;
         const HEIGHT = 600;
-        const GROUND_Y = 550;
-        
+        const GROUND_Y = 540;
+        const TARGET_CENTER = WIDTH / 2;
+
         let engine, render, runner;
         let blocks = [];
         let currentBlock = null;
-        let score = 0;
-        let highScore = localStorage.getItem('stackerHighScore') || 0;
+        let baseScore = 0;
+        let bonusScore = 0;
+        let totalScore = 0;
+        let highScore = localStorage.getItem('canopyStackerHighScore') || 0;
         let isGameOver = false;
         let mouseX = WIDTH / 2;
+
+        let currentCameraY = 0;
+        let targetCameraY = 0;
 
         const container = document.getElementById('game-container');
         const scoreEl = document.getElementById('score');
         const highScoreEl = document.getElementById('high-score');
         const overlay = document.getElementById('overlay');
         const finalScoreEl = document.getElementById('final-score');
+        const popupsContainer = document.getElementById('bonus-popups');
+        const bgParallax = document.getElementById('bg-parallax');
 
-        highScoreEl.innerText = `Best: ${highScore}m`;
+        highScoreEl.innerText = `BEST: ${highScore}m`;
+
+        // Safe Initialization Hook
+        window.addEventListener('load', () => {
+            generateSporeBackground();
+            init();
+        });
+
+        function generateSporeBackground() {
+            for (let i = 0; i < 25; i++) {
+                const spore = document.createElement('div');
+                spore.className = 'spore';
+                spore.style.left = `${Math.random() * 100}%`;
+                spore.style.top = `${Math.random() * 100}%`;
+                spore.style.animationDelay = `${Math.random() * 8}s`;
+                document.body.appendChild(spore);
+            }
+        }
 
         function init() {
-            // 1. Create engine & world
-            engine = Engine.create({ gravity: { y: 1.5 } });
+            engine = Engine.create({ gravity: { y: 1.6 } });
 
-            // 2. Create renderer
             render = Render.create({
                 element: container,
                 engine: engine,
@@ -147,26 +272,27 @@
                     width: WIDTH,
                     height: HEIGHT,
                     wireframes: false,
-                    background: '#232946'
+                    background: 'transparent' // Allows visual access to the container layer background glow matrix
                 }
             });
             Render.run(render);
 
-            // 3. Run the engine
             runner = Runner.create();
             Runner.run(runner, engine);
 
-            // 4. Add the foundational ground platform
-            const ground = Bodies.rectangle(WIDTH / 2, GROUND_Y, 200, 20, {
+            // Foundation stump platform
+            const ground = Bodies.rectangle(WIDTH / 2, GROUND_Y, 150, 24, {
                 isStatic: true,
-                render: { fillStyle: '#b8c1ec' }
+                render: { 
+                    fillStyle: '#142921',
+                    strokeStyle: '#39ff14',
+                    lineWidth: 3
+                }
             });
             Composite.add(engine.world, ground);
 
-            // 5. Spawn our first predictive floating block
             spawnNextBlock();
-
-            // 6. Hook up tracking loops
+            
             Matter.Events.on(engine, 'afterUpdate', gameLoop);
             setupControls();
         }
@@ -174,128 +300,159 @@
         function spawnNextBlock() {
             if (isGameOver) return;
 
-            // Generate a random width and height for architectural variety
-            const w = Math.random() * 40 + 40; 
-            const h = Math.random() * 20 + 30;
-            
-            // Generate a vibrant random color palette
-            const hues =;
-            const randomColor = `hsl(${hues[Math.floor(Math.random() * hues.length)]}, 80%, 60%)`;
+            const w = Math.random() * 30 + 50; 
+            const h = 26;
+            const spawnY = 90 + currentCameraY;
 
-            // This block is static initially so it hovers with the mouse
-            currentBlock = Bodies.rectangle(mouseX, 80, w, h, {
+            // Natural Bioluminescent Flora Palette
+            const natureColors = ['#2dc653', '#208b3a', '#00f0ff', '#10451d', '#39ff14', '#00b4d8'];
+            const chosenColor = natureColors[Math.floor(Math.random() * natureColors.length)];
+
+            currentBlock = Bodies.rectangle(mouseX, spawnY, w, h, {
                 isStatic: true,
-                friction: 0.4,
-                restitution: 0.1,
-                render: { fillStyle: randomColor }
-            });
-
-            Composite.add(engine.world, currentBlock);
-        }
-
-        function setupControls() {
-            // Track mouse movements to position the hovering block
-            window.addEventListener('mousemove', (e) => {
-                const rect = render.canvas.getBoundingClientRect();
-                mouseX = e.clientX - rect.left;
-                // Keep inside canvas bounds
-                if (mouseX < 0) mouseX = 0;
-                if (mouseX > WIDTH) mouseX = WIDTH;
-
-                if (currentBlock && currentBlock.isStatic && !isGameOver) {
-                    Body.setPosition(currentBlock, { x: mouseX, y: currentBlock.position.y });
+                friction: 0.6,
+                restitution: 0.05,
+                render: { 
+                    fillStyle: chosenColor,
+                    strokeStyle: '#ffffff',
+                    lineWidth: 2
                 }
-            });
-
-            // Tap/Click to release the active block
-            container.addEventListener('mousedown', () => {
-                if (currentBlock && currentBlock.isStatic && !isGameOver) {
-                    // Turn physics back on by removing the static tag
-                    Body.setStatic(currentBlock, false);
-                    blocks.push(currentBlock);
-                    currentBlock = null;
-
-                    // Delay spawning the next block slightly to prevent double drops
-                    setTimeout(spawnNextBlock, 800);
-                }
-            });
-
-            // Mobile touch compatibility
-            container.addEventListener('touchstart', (e) => {
-                const rect = render.canvas.getBoundingClientRect();
-                mouseX = e.touches[0].clientX - rect.left;
-                if (currentBlock && currentBlock.isStatic && !isGameOver) {
-                    Body.setPosition(currentBlock, { x: mouseX, y: currentBlock.position.y });
-                    Body.setStatic(currentBlock, false);
-                    blocks.push(currentBlock);
-                    currentBlock = null;
-                    setTimeout(spawnNextBlock, 800);
-                }
-            });
-        }
-
-        function gameLoop() {
-            if (isGameOver) return;
-
-            let highestPoint = GROUND_Y;
-
-            // Analyze every dropped block
-            for (let i = 0; i < blocks.length; i++) {
-                const block = blocks[i];
-
-                // CRITICAL RULE: If any block tumbles past the canvas floor, you lose!
-                if (block.position.y > HEIGHT + 50) {
-                    triggerGameOver();
-                    return;
-                }
-
-                // If block is safe and stable, check if it extends the stack height
-                if (block.position.y < highestPoint) {
-                    highestPoint = block.position.y;
-                }
-            }
-
-            // Calculate height in "meters" relative upward from the base platform
-            let currentHeight = Math.max(0, Math.round((GROUND_Y - 10) - highestPoint));
-            score = currentHeight;
-            scoreEl.innerText = `Height: ${score}m`;
-        }
-
-        function triggerGameOver() {
-            isGameOver = true;
-            overlay.style.display = 'flex';
-            finalScoreEl.innerText = `Final Height: ${score}m`;
-
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('stackerHighScore', highScore);
-                highScoreEl.innerText = `Best: ${highScore}m`;
-            }
-        }
-
-        function resetGame() {
-            // Completely wipe the world clear
-            Composite.clear(engine.world, false);
-            blocks = [];
-            currentBlock = null;
-            score = 0;
-            scoreEl.innerText = `Height: 0m`;
-            isGameOver = false;
-            overlay.style.display = 'none';
-
-            // Re-add baseline ground
-            const ground = Bodies.rectangle(WIDTH / 2, GROUND_Y, 200, 20, {
-                isStatic: true,
-                render: { fillStyle: '#b8c1ec' }
-            });
-            Composite.add(engine.world, ground);
-            
-            spawnNextBlock();
-        }
-
-        // Initialize on load
-        init();
-    </script>
-</body>
-</html>
+Use code with caution.
+});
+Composite.add(engine.world, currentBlock);
+}
+function setupControls() {
+const updateBlockPosition = (clientX) => {
+if (!currentBlock || !currentBlock.isStatic || isGameOver) return;
+const rect = render.canvas.getBoundingClientRect();
+mouseX = clientX - rect.left;
+if (mouseX < 20) mouseX = 20;
+if (mouseX > WIDTH - 20) mouseX = WIDTH - 20;
+Body.setPosition(currentBlock, { x: mouseX, y: currentBlock.position.y });
+};
+window.addEventListener('mousemove', (e) => updateBlockPosition(e.clientX));
+container.addEventListener('mousedown', () => {
+if (currentBlock && currentBlock.isStatic && !isGameOver) {
+releaseBlock();
+}
+});
+container.addEventListener('touchstart', (e) => {
+e.preventDefault();
+updateBlockPosition(e.touches[0].clientX);
+if (currentBlock && currentBlock.isStatic && !isGameOver) {
+releaseBlock();
+}
+}, { passive: false });
+}
+function releaseBlock() {
+Body.setStatic(currentBlock, false);
+blocks.push(currentBlock);
+checkPerfectDrop(currentBlock);
+currentBlock = null;
+setTimeout(spawnNextBlock, 700);
+}
+function checkPerfectDrop(droppedBlock) {
+let alignmentTarget = TARGET_CENTER;
+if (blocks.length > 1) {
+alignmentTarget = blocks[blocks.length - 2].position.x;
+}
+const drift = Math.abs(droppedBlock.position.x - alignmentTarget);
+if (drift <= 5) {
+bonusScore += 5;
+createPerfectVisual(droppedBlock.position.x);
+triggerScreenFlash();
+}
+}
+function triggerScreenFlash() {
+container.style.boxShadow = '0 0 45px var(--perfect-glow), inset 0 0 25px var(--perfect-glow)';
+container.style.borderColor = 'var(--perfect-glow)';
+setTimeout(() => {
+if (!isGameOver) {
+container.style.boxShadow = '0 0 30px rgba(57, 255, 20, 0.35), inset 0 0 20px rgba(57, 255, 20, 0.15)';
+container.style.borderColor = 'var(--glow-color)';
+}
+}, 300);
+}
+function createPerfectVisual(x) {
+const text = document.createElement('div');
+text.className = 'perfect-text';
+text.innerText = '🌱 SPROUT +5m';
+text.style.left = ${Math.max(20, Math.min(WIDTH - 240, x - 100))}px;
+const displayY = (GROUND_Y - 180) - (currentCameraY * -1);
+text.style.top = ${Math.max(120, Math.min(HEIGHT - 120, displayY))}px;
+popupsContainer.appendChild(text);
+setTimeout(() => text.remove(), 1000);
+}
+function gameLoop() {
+if (isGameOver) return;
+let highestPoint = GROUND_Y;
+for (let i = 0; i < blocks.length; i++) {
+const block = blocks[i];
+// Lose Condition: Tumble down off screen viewport bounds
+if (block.position.y > GROUND_Y + 120 + currentCameraY) {
+triggerGameOver();
+return;
+}
+if (block.position.y < highestPoint) {
+highestPoint = block.position.y;
+}
+}
+baseScore = Math.max(0, Math.round((GROUND_Y - 12) - highestPoint));
+totalScore = baseScore + bonusScore;
+scoreEl.innerText = ALTITUDE: ${totalScore}m;
+// Dynamic camera threshold window setup
+const midPointThreshold = HEIGHT * 0.45;
+if (highestPoint < midPointThreshold + currentCameraY) {
+targetCameraY = highestPoint - midPointThreshold;
+}
+// Linear interpolation camera ease
+currentCameraY += (targetCameraY - currentCameraY) * 0.06;
+// Re-bind rendering context bounds viewport matrix
+Bounds.setMinMax(render.bounds,
+{ x: 0, y: currentCameraY },
+{ x: WIDTH, y: HEIGHT + currentCameraY }
+);
+// True Parallax Background Transformation System
+// Negative tracking moves the background gradients downward as camera jumps upward
+bgParallax.style.backgroundPositionY = ${currentCameraY * -0.35}px;
+}
+function triggerGameOver() {
+isGameOver = true;
+container.style.boxShadow = '0 0 35px var(--fail-glow)';
+container.style.borderColor = 'var(--fail-glow)';
+overlay.style.display = 'flex';
+finalScoreEl.innerText = Final Altitude: ${totalScore}m;
+if (totalScore > highScore) {
+highScore = totalScore;
+localStorage.setItem('canopyStackerHighScore', highScore);
+highScoreEl.innerText = BEST: ${highScore}m;
+}
+}
+function resetGame() {
+Composite.clear(engine.world, false);
+blocks = [];
+currentBlock = null;
+baseScore = 0;
+bonusScore = 0;
+totalScore = 0;
+currentCameraY = 0;
+targetCameraY = 0;
+scoreEl.innerText = ALTITUDE: 0m;
+isGameOver = false;
+overlay.style.display = 'none';
+popupsContainer.innerHTML = '';
+container.style.boxShadow = '0 0 30px rgba(57, 255, 20, 0.35), inset 0 0 20px rgba(57, 255, 20, 0.15)';
+container.style.borderColor = 'var(--glow-color)';
+Bounds.setMinMax(render.bounds, { x: 0, y: 0 }, { x: WIDTH, y: HEIGHT });
+const ground = Bodies.rectangle(WIDTH / 2, GROUND_Y, 150, 24, {
+isStatic: true,
+render: {
+fillStyle: '#142921',
+strokeStyle: '#39ff14',
+lineWidth: 3
+}
+});
+Composite.add(engine.world, ground);
+spawnNextBlock();
+}
 
