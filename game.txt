@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My First Clicker Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+            color: white;
+            text-align: center;
+            padding-top: 100px;
+            margin: 0;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        .score-box {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #00ffcc;
+        }
+        .click-btn {
+            padding: 20px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1e1e2f;
+            background-color: #00ffcc;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.4);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .click-btn:hover {
+            background-color: #00e6b8;
+        }
+        .click-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Cookie Clicker Clone</h1>
+    <div class="score-box">Score: <span id="score">0</span></div>
+    <button class="click-btn" id="clickMe">CLICK ME!</button>
+
+    <script>
+        // Game state variables
+        let score = 0;
+        const scoreDisplay = document.getElementById('score');
+        const clickButton = document.getElementById('clickMe');
+
+        // Game interaction logic
+        clickButton.addEventListener('click', () => {
+            score++;
+            scoreDisplay.textContent = score;
+        });
+    </script>
+</body>
+</html>
