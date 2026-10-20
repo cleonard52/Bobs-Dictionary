@@ -2,218 +2,638 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Star Dodger 🚀</title>
-<style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: #080b20;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
-  }
-  h1 { color: #64f7ff; text-shadow: 0 0 15px #00c8ff; }
-  #stats { font-size: 18px; margin: 12px; }
-  canvas {
-    display: block;
-    margin: 0 auto;
-    width: min(95vw, 420px);
-    height: auto;
-    background: #101735;
-    border: 2px solid #64f7ff;
-    border-radius: 12px;
-    touch-action: none;
-  }
-  button {
-    margin: 8px;
-    padding: 12px 22px;
-    border: 0;
-    border-radius: 8px;
-    background: #64f7ff;
-    color: #080b20;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  p { color: #c9d5ff; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Sky Jumper</title>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+      background: #83d9ff;
+      color: white;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #hud {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 2;
+      padding: 14px 18px;
+      background: #10203cbb;
+      border: 1px solid #ffffff45;
+      border-radius: 14px;
+      line-height: 1.8;
+      user-select: none;
+    }
+
+    #help {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #10203ccc;
+      padding: 12px 18px;
+      border-radius: 12px;
+      text-align: center;
+      width: max-content;
+      max-width: 94vw;
+      font-size: 13px;
+    }
+
+    #message {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      background: #07152bd9;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 24px;
+    }
+
+    #message h1 {
+      font-size: clamp(32px, 7vw, 64px);
+      margin-bottom: 4px;
+    }
+
+    button {
+      background: #ffcf4a;
+      color: #17223a;
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 25px;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #mobile {
+      position: fixed;
+      bottom: 85px;
+      left: 12px;
+      right: 12px;
+      display: none;
+      justify-content: space-between;
+      align-items: end;
+      pointer-events: none;
+    }
+
+    .pad {
+      display: grid;
+      grid-template-columns: repeat(3, 48px);
+      gap: 5px;
+      pointer-events: auto;
+    }
+
+    .pad button, #jump {
+      padding: 0;
+      width: 48px;
+      height: 48px;
+      background: #10203cbb;
+      color: white;
+      border: 1px solid #ffffff66;
+      touch-action: none;
+    }
+
+    #jump {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #ffbd35e8;
+      color: #17223a;
+    }
+
+    @media (pointer: coarse) {
+      #mobile { display: flex; }
+      #help { bottom: 8px; font-size: 11px; }
+    }
+  </style>
 </head>
+
 <body>
-<h1>🚀 STAR DODGER</h1>
-<div id="stats">
-  Score: <span id="score">0</span> |
-  Best: <span id="best">0</span>
-</div>
-<canvas id="game" width="420" height="560"></canvas>
-<button id="start">Start / Restart</button>
-<p>Move with ← → or A / D. On mobile, drag your ship!</p>
-<p>Dodge asteroids ☄️ and collect stars ⭐</p>
+  <div id="hud">
+    <strong>☁️ SKY JUMPER</strong><br />
+    🪙 Coins: <span id="coins">0</span><br />
+    🏁 Checkpoint: <span id="checkpoint">1</span>
+  </div>
 
-<script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-const scoreEl = document.getElementById("score");
-const bestEl = document.getElementById("best");
+  <div id="help">
+    WASD / Arrow Keys: Move · SPACE: Jump · R: Restart
+  </div>
 
-let best = 0;
-try {
-  best = Number(localStorage.getItem("starBest")) || 0;
-} catch {}
-bestEl.textContent = best;
+  <div id="mobile">
+    <div class="pad">
+      <span></span>
+      <button data-key="w">▲</button>
+      <span></span>
+      <button data-key="a">◀</button>
+      <button data-key="s">▼</button>
+      <button data-key="d">▶</button>
+    </div>
+    <button id="jump">JUMP</button>
+  </div>
 
-let player, rocks, stars, score, running, frame, keys;
+  <div id="message">
+    <h1 id="messageTitle">YOU WIN!</h1>
+    <p id="messageText">You reached the sky island!</p>
+    <button id="restart">PLAY AGAIN</button>
+  </div>
 
-function reset() {
-  player = { x: 190, y: 475, w: 40, h: 40, speed: 6 };
-  rocks = [];
-  stars = [];
-  score = 0;
-  frame = 0;
-  keys = {};
-  running = true;
-  scoreEl.textContent = score;
-  requestAnimationFrame(loop);
-}
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+      }
+    }
+  </script>
 
-document.getElementById("start").onclick = reset;
+  <script type="module">
+    import * as THREE from "three";
 
-document.addEventListener("keydown", e => {
-  if (["ArrowLeft", "ArrowRight", " "].includes(e.key))
-    e.preventDefault();
-  keys[e.key.toLowerCase()] = true;
-});
-document.addEventListener("keyup", e => {
-  keys[e.key.toLowerCase()] = false;
-});
+    // ---------------------------------
+    // SCENE AND CAMERA
+    // ---------------------------------
 
-function moveToPointer(e) {
-  const rect = canvas.getBoundingClientRect();
-  player.x = (e.clientX - rect.left) * canvas.width / rect.width
-             - player.w / 2;
-  player.x = Math.max(0, Math.min(canvas.width - player.w, player.x));
-}
-canvas.addEventListener("pointerdown", e => {
-  if (running) moveToPointer(e);
-});
-canvas.addEventListener("pointermove", e => {
-  if (running && e.buttons) moveToPointer(e);
-});
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x83d9ff);
+    scene.fog = new THREE.Fog(0x83d9ff, 35, 110);
 
-function hit(a, b) {
-  return a.x < b.x + b.w &&
-         a.x + a.w > b.x &&
-         a.y < b.y + b.h &&
-         a.y + a.h > b.y;
-}
+    const camera = new THREE.PerspectiveCamera(
+      65, window.innerWidth / window.innerHeight, 0.1, 200
+    );
 
-function endGame() {
-  running = false;
-  if (score > best) {
-    best = score;
-    bestEl.textContent = best;
-    try { localStorage.setItem("starBest", best); } catch {}
-  }
-  draw();
-  ctx.fillStyle = "rgba(0,0,0,.78)";
-  ctx.fillRect(25, 205, 370, 140);
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#ff638b";
-  ctx.font = "bold 34px Arial";
-  ctx.fillText("GAME OVER", 210, 255);
-  ctx.fillStyle = "white";
-  ctx.font = "20px Arial";
-  ctx.fillText("Score: " + score, 210, 290);
-  ctx.font = "15px Arial";
-  ctx.fillText("Press Start / Restart to play again", 210, 320);
-}
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    document.body.appendChild(renderer.domElement);
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x6488a8, 2));
 
-  // Stars in the background
-  for (let i = 0; i < 65; i++) {
-    let x = (i * 79) % 420;
-    let y = (i * 113 + frame * 1.3) % 560;
-    ctx.fillStyle = "#899acb";
-    ctx.fillRect(x, y, 2, 2);
-  }
+    const sun = new THREE.DirectionalLight(0xffffff, 3);
+    sun.position.set(-10, 20, 10);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    scene.add(sun);
 
-  // Player spaceship
-  ctx.font = "36px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("🚀", player.x + 20, player.y + 34);
+    // ---------------------------------
+    // MATERIALS
+    // ---------------------------------
 
-  // Asteroids
-  rocks.forEach(r => {
-    ctx.font = "30px Arial";
-    ctx.fillText("☄️", r.x + r.w / 2, r.y + r.h);
-  });
-
-  // Collectible stars
-  stars.forEach(s => {
-    ctx.font = "25px Arial";
-    ctx.fillText("⭐", s.x + 12, s.y + 24);
-  });
-}
-
-function loop() {
-  if (!running) return;
-  frame++;
-
-  if (keys["arrowleft"] || keys["a"]) player.x -= player.speed;
-  if (keys["arrowright"] || keys["d"]) player.x += player.speed;
-  player.x = Math.max(0, Math.min(380, player.x));
-
-  if (frame % Math.max(15, 42 - Math.floor(score / 100)) === 0) {
-    rocks.push({
-      x: Math.random() * 380,
-      y: -30, w: 34, h: 34,
-      speed: 2.5 + Math.random() * 2 + score / 500
+    const grassMat = new THREE.MeshStandardMaterial({
+      color: 0x45ce76, roughness: 0.85
     });
-  }
 
-  if (frame % 95 === 0) {
-    stars.push({ x: 15 + Math.random() * 370, y: -25, w: 24, h: 24 });
-  }
+    const dirtMat = new THREE.MeshStandardMaterial({
+      color: 0x926044, roughness: 1
+    });
 
-  rocks.forEach(r => r.y += r.speed);
-  stars.forEach(s => s.y += 3);
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xffc928, metalness: 0.55, roughness: 0.25
+    });
 
-  for (const r of rocks) {
-    if (hit(player, r)) {
-      endGame();
-      return;
+    const playerMat = new THREE.MeshStandardMaterial({
+      color: 0x3878ff, roughness: 0.4
+    });
+
+    const whiteMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff
+    });
+
+    // ---------------------------------
+    // PLATFORMS
+    // ---------------------------------
+
+    const platforms = [];
+    const coins = [];
+    const checkpoints = [];
+
+    function makePlatform(x, y, z, w, d, color = 0x45ce76) {
+      const group = new THREE.Group();
+      group.position.set(x, y, z);
+
+      const topMat = new THREE.MeshStandardMaterial({
+        color, roughness: 0.85
+      });
+
+      const top = new THREE.Mesh(
+        new THREE.BoxGeometry(w, 0.35, d), topMat
+      );
+      top.position.y = 0;
+      top.castShadow = true;
+      top.receiveShadow = true;
+      group.add(top);
+
+      const dirt = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 0.96, 0.65, d * 0.96),
+        dirtMat
+      );
+      dirt.position.y = -0.48;
+      dirt.castShadow = true;
+      group.add(dirt);
+
+      scene.add(group);
+
+      platforms.push({
+        x, y: y + 0.175, z, w, d, group
+      });
+
+      return { x, y: y + 0.175, z, w, d, group };
     }
-  }
 
-  stars = stars.filter(s => {
-    if (hit(player, s)) {
-      score += 25;
-      scoreEl.textContent = score;
-      return false;
+    // Starting island
+    makePlatform(0, 0, 0, 9, 9);
+
+    // Jumping course
+    const course = [
+      [0, 0.5, -9, 4.5, 4.5],
+      [4, 1.0, -16, 4, 4],
+      [9, 1.7, -23, 4, 4],
+      [4, 2.4, -30, 4, 4],
+      [-2, 3.0, -37, 4, 4],
+      [-8, 3.8, -44, 4, 4],
+      [-5, 4.5, -51, 4, 4],
+      [2, 5.2, -58, 4.5, 4.5],
+      [8, 6.0, -65, 5, 5],
+      [8, 6.0, -73, 7, 7]
+    ];
+
+    for (let i = 0; i < course.length; i++) {
+      const [x, y, z, w, d] = course[i];
+      const p = makePlatform(x, y, z, w, d);
+      if (i === course.length - 1) checkpoints.push(p);
     }
-    return s.y < 580;
-  });
 
-  rocks = rocks.filter(r => r.y < 590);
+    // ---------------------------------
+    // PLAYER
+    // ---------------------------------
 
-  if (frame % 6 === 0) {
-    score++;
-    scoreEl.textContent = score;
-  }
+    const player = new THREE.Group();
 
-  draw();
-  requestAnimationFrame(loop);
-}
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(0.85, 1.15, 0.7),
+      playerMat
+    );
+    body.position.y = 0.05;
+    body.castShadow = true;
+    player.add(body);
 
-draw();
-ctx.fillStyle = "white";
-ctx.textAlign = "center";
-ctx.font = "22px Arial";
-ctx.fillText("Ready for launch?", 210, 250);
-ctx.font = "16px Arial";
-ctx.fillText("Click Start to begin!", 210, 280);
-</script>
+    // Cute eyes
+    for (const x of [-0.2, 0.2]) {
+      const eye = new THREE.Mesh(
+        new THREE.SphereGeometry(0.075, 12, 12),
+        whiteMat
+      );
+      eye.position.set(x, 0.22, 0.355);
+      player.add(eye);
+    }
+
+    const pupilMat = new THREE.MeshStandardMaterial({
+      color: 0x14213d
+    });
+
+    for (const x of [-0.2, 0.2]) {
+      const pupil = new THREE.Mesh(
+        new THREE.SphereGeometry(0.035, 10, 10),
+        pupilMat
+      );
+      pupil.position.set(x, 0.22, 0.42);
+      player.add(pupil);
+    }
+
+    scene.add(player);
+
+    const PLAYER_HEIGHT = 1.25;
+    const PLAYER_RADIUS = 0.38;
+
+    let velocity = new THREE.Vector3();
+    let grounded = false;
+    let coinsCollected = 0;
+    let lastSafe = new THREE.Vector3(0, 1.1, 0);
+    let won = false;
+    let previousBottom = 0;
+
+    function resetPlayer() {
+      player.position.copy(lastSafe);
+      velocity.set(0, 0, 0);
+      grounded = false;
+      won = false;
+      document.getElementById("message").style.display = "none";
+    }
+
+    // ---------------------------------
+    // COINS
+    // ---------------------------------
+
+    function makeCoin(x, y, z) {
+      const coin = new THREE.Mesh(
+        new THREE.TorusGeometry(0.38, 0.12, 10, 20),
+        goldMat
+      );
+
+      coin.position.set(x, y, z);
+      coin.castShadow = true;
+      scene.add(coin);
+      coins.push({ mesh: coin, collected: false });
+    }
+
+    [
+      [0, 2.2, -5],
+      [0, 2.8, -9],
+      [4, 3.2, -16],
+      [9, 3.9, -23],
+      [4, 4.6, -30],
+      [-2, 5.2, -37],
+      [-8, 6.0, -44],
+      [-5, 6.7, -51],
+      [2, 7.4, -58],
+      [8, 8.3, -65]
+    ].forEach(([x, y, z]) => makeCoin(x, y, z));
+
+    // ---------------------------------
+    // GOAL PORTAL
+    // ---------------------------------
+
+    const portal = new THREE.Mesh(
+      new THREE.TorusGeometry(1.35, 0.18, 16, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0xff65e8,
+        emissive: 0xb72eff,
+        emissiveIntensity: 2
+      })
+    );
+
+    portal.position.set(8, 8.0, -73);
+    portal.castShadow = true;
+    scene.add(portal);
+
+    // ---------------------------------
+    // CLOUDS
+    // ---------------------------------
+
+    const cloudMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, roughness: 1
+    });
+
+    for (let i = 0; i < 35; i++) {
+      const cloud = new THREE.Group();
+
+      const x = (Math.random() - 0.5) * 90;
+      const y = 1 + Math.random() * 20;
+      const z = -Math.random() * 95;
+
+      for (let j = 0; j < 4; j++) {
+        const puff = new THREE.Mesh(
+          new THREE.SphereGeometry(
+            0.8 + Math.random() * 1.2, 10, 8
+          ),
+          cloudMat
+        );
+        puff.position.set(j * 1.15, Math.random() * 0.5, 0);
+        cloud.add(puff);
+      }
+
+      cloud.position.set(x, y, z);
+      scene.add(cloud);
+    }
+
+    // ---------------------------------
+    // INPUT
+    // ---------------------------------
+
+    const keys = {};
+
+    window.addEventListener("keydown", (e) => {
+      const k = e.key.toLowerCase();
+      keys[k] = true;
+
+      if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"]
+        .includes(k)) e.preventDefault();
+
+      if (k === " " && grounded && !won) {
+        velocity.y = 10.5;
+        grounded = false;
+      }
+
+      if (k === "r") resetPlayer();
+    });
+
+    window.addEventListener("keyup", (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    document.querySelectorAll("[data-key]").forEach((button) => {
+      const k = button.dataset.key;
+
+      const down = (e) => {
+        e.preventDefault();
+        keys[k] = true;
+      };
+
+      const up = (e) => {
+        e.preventDefault();
+        keys[k] = false;
+      };
+
+      button.addEventListener("pointerdown", down);
+      button.addEventListener("pointerup", up);
+      button.addEventListener("pointercancel", up);
+      button.addEventListener("pointerleave", up);
+    });
+
+    const jumpButton = document.getElementById("jump");
+
+    jumpButton.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      if (grounded && !won) {
+        velocity.y = 10.5;
+        grounded = false;
+      }
+    });
+
+    document.getElementById("restart").addEventListener("click", () => {
+      coinsCollected = 0;
+      document.getElementById("coins").textContent = "0";
+
+      coins.forEach((c) => {
+        c.collected = false;
+        c.mesh.visible = true;
+      });
+
+      lastSafe.set(0, 1.1, 0);
+      resetPlayer();
+    });
+
+    // ---------------------------------
+    // GAME LOOP AND PHYSICS
+    // ---------------------------------
+
+    const clock = new THREE.Clock();
+
+    function finishGame() {
+      if (won) return;
+      won = true;
+      velocity.set(0, 0, 0);
+
+      document.getElementById("messageTitle").textContent =
+        "YOU WIN! 🏆";
+
+      document.getElementById("messageText").textContent =
+        `You collected ${coinsCollected} coins! Great job!`;
+
+      document.getElementById("message").style.display = "flex";
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const dt = Math.min(clock.getDelta(), 0.04);
+      const t = clock.elapsedTime;
+
+      portal.rotation.z = Math.sin(t * 1.5) * 0.15;
+      portal.rotation.y += dt * 0.7;
+
+      for (const c of coins) {
+        if (!c.collected) {
+          c.mesh.rotation.y += dt * 2.5;
+          c.mesh.position.y += Math.sin(t * 3 + c.mesh.position.z) * dt * 0.25;
+
+          // Return to its original height is handled by its bobbing offset
+          // being small enough to keep coins near their intended position.
+          if (player.position.distanceTo(c.mesh.position) < 1.25) {
+            c.collected = true;
+            c.mesh.visible = false;
+            coinsCollected++;
+            document.getElementById("coins").textContent =
+              coinsCollected;
+          }
+        }
+      }
+
+      if (!won) {
+        const forward =
+          (keys["w"] || keys["arrowup"] ? 1 : 0) -
+          (keys["s"] || keys["arrowdown"] ? 1 : 0);
+
+        const sideways =
+          (keys["d"] || keys["arrowright"] ? 1 : 0) -
+          (keys["a"] || keys["arrowleft"] ? 1 : 0);
+
+        const direction = new THREE.Vector3(sideways, 0, -forward);
+
+        if (direction.lengthSq() > 0) {
+          direction.normalize();
+          velocity.x = direction.x * 6.5;
+          velocity.z = direction.z * 6.5;
+          player.rotation.y = Math.atan2(direction.x, direction.z);
+        } else {
+          velocity.x *= Math.pow(0.0005, dt);
+          velocity.z *= Math.pow(0.0005, dt);
+        }
+
+        previousBottom = player.position.y - PLAYER_HEIGHT / 2;
+
+        velocity.y -= 24 * dt;
+
+        player.position.x += velocity.x * dt;
+        player.position.z += velocity.z * dt;
+        player.position.y += velocity.y * dt;
+
+        grounded = false;
+
+        // Land only when falling onto the top of a platform.
+        if (velocity.y <= 0) {
+          for (const p of platforms) {
+            const bottom = player.position.y - PLAYER_HEIGHT / 2;
+
+            const overlapsX =
+              Math.abs(player.position.x - p.x) <
+              p.w / 2 + PLAYER_RADIUS;
+
+            const overlapsZ =
+              Math.abs(player.position.z - p.z) <
+              p.d / 2 + PLAYER_RADIUS;
+
+            if (
+              overlapsX &&
+              overlapsZ &&
+              previousBottom >= p.y - 0.08 &&
+              bottom <= p.y
+            ) {
+              player.position.y = p.y + PLAYER_HEIGHT / 2;
+              velocity.y = 0;
+              grounded = true;
+
+              lastSafe.set(
+                player.position.x,
+                player.position.y,
+                player.position.z
+              );
+
+              break;
+            }
+          }
+        }
+
+        // Fall recovery
+        if (player.position.y < -12) {
+          resetPlayer();
+        }
+
+        // Win condition
+        if (player.position.distanceTo(portal.position) < 2.0) {
+          finishGame();
+        }
+
+        // Camera follows from behind and above.
+        const targetCamera = new THREE.Vector3(
+          player.position.x,
+          player.position.y + 6,
+          player.position.z + 11
+        );
+
+        camera.position.lerp(targetCamera, 1 - Math.pow(0.001, dt));
+
+        camera.lookAt(
+          player.position.x,
+          player.position.y + 0.5,
+          player.position.z - 2
+        );
+
+        // Track progress along the course.
+        const progress = Math.max(
+          1,
+          Math.min(11, Math.floor((-player.position.z) / 7) + 1)
+        );
+
+        document.getElementById("checkpoint").textContent = progress;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    resetPlayer();
+    animate();
+  </script>
 </body>
 </html>
