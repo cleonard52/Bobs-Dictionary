@@ -1,638 +1,513 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Sky Jumper</title>
-
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: system-ui, sans-serif;
-      background: #83d9ff;
-      color: white;
-    }
-
-    canvas {
-      display: block;
-    }
-
-    #hud {
-      position: fixed;
-      top: 18px;
-      left: 18px;
-      z-index: 2;
-      padding: 14px 18px;
-      background: #10203cbb;
-      border: 1px solid #ffffff45;
-      border-radius: 14px;
-      line-height: 1.8;
-      user-select: none;
-    }
-
-    #help {
-      position: fixed;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #10203ccc;
-      padding: 12px 18px;
-      border-radius: 12px;
-      text-align: center;
-      width: max-content;
-      max-width: 94vw;
-      font-size: 13px;
-    }
-
-    #message {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 5;
-      background: #07152bd9;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      text-align: center;
-      padding: 24px;
-    }
-
-    #message h1 {
-      font-size: clamp(32px, 7vw, 64px);
-      margin-bottom: 4px;
-    }
-
-    button {
-      background: #ffcf4a;
-      color: #17223a;
-      border: 0;
-      border-radius: 12px;
-      padding: 14px 25px;
-      font-weight: 800;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    #mobile {
-      position: fixed;
-      bottom: 85px;
-      left: 12px;
-      right: 12px;
-      display: none;
-      justify-content: space-between;
-      align-items: end;
-      pointer-events: none;
-    }
-
-    .pad {
-      display: grid;
-      grid-template-columns: repeat(3, 48px);
-      gap: 5px;
-      pointer-events: auto;
-    }
-
-    .pad button, #jump {
-      padding: 0;
-      width: 48px;
-      height: 48px;
-      background: #10203cbb;
-      color: white;
-      border: 1px solid #ffffff66;
-      touch-action: none;
-    }
-
-    #jump {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: #ffbd35e8;
-      color: #17223a;
-    }
-
-    @media (pointer: coarse) {
-      #mobile { display: flex; }
-      #help { bottom: 8px; font-size: 11px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GameZone | Play Free Games</title>
+<style>
+:root {
+  --bg: #0b0d17;
+  --panel: #151929;
+  --purple: #8b5cf6;
+  --text: #f5f5ff;
+  --muted: #a5acc5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 7%;
+  background: #101321;
+  border-bottom: 1px solid #272b40;
+  flex-wrap: wrap;
+}
+.logo { font-size: 25px; font-weight: 900; }
+.logo span { color: var(--purple); }
+nav { display: flex; gap: 18px; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a:hover { color: white; }
+.hero {
+  padding: 65px 7% 45px;
+  text-align: center;
+  background: radial-gradient(ellipse at top, #34205f, transparent 65%);
+}
+.hero h1 { font-size: clamp(36px, 7vw, 64px); margin: 0 0 15px; }
+.hero h1 span { color: #a78bfa; }
+.hero p { color: var(--muted); line-height: 1.6; }
+.search {
+  margin-top: 22px;
+  width: min(100%, 480px);
+  padding: 15px 18px;
+  border: 1px solid #39344f;
+  border-radius: 12px;
+  background: #151929;
+  color: white;
+  font-size: 16px;
+}
+main { padding: 25px 7% 60px; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 25px; }
+.filter, button {
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 16px;
+  cursor: pointer;
+  color: white;
+  background: #292d43;
+  font-size: 14px;
+}
+.filter.active, .primary {
+  background: var(--purple);
+}
+.filter:hover, button:hover { filter: brightness(1.2); }
+.section-title { margin: 25px 0 20px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+.game-card {
+  background: var(--panel);
+  border: 1px solid #252a40;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform .2s, border-color .2s;
+}
+.game-card:hover { transform: translateY(-5px); border-color: var(--purple); }
+.cover {
+  height: 145px;
+  display: grid;
+  place-items: center;
+  font-size: 65px;
+  background: linear-gradient(135deg, #262044, #171c32);
+}
+.card-content { padding: 17px; }
+.card-content h3 { margin: 0 0 8px; }
+.card-content p { color: var(--muted); font-size: 14px; min-height: 34px; }
+.tag { font-size: 12px; color: #c4b5fd; }
+.card-content button { width: 100%; margin-top: 12px; }
+#playArea {
+  display: none;
+  background: var(--panel);
+  border: 1px solid #30344c;
+  padding: 24px;
+  border-radius: 16px;
+  margin-top: 35px;
+  text-align: center;
+}
+#playArea h2 { margin-top: 0; }
+#gameContent { margin: 20px auto; max-width: 500px; }
+#gameContent button { margin: 4px; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 85px);
+  gap: 8px;
+  justify-content: center;
+  margin: 20px auto;
+}
+.cell {
+  height: 85px;
+  font-size: 32px;
+  background: #272b42;
+}
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(45px, 70px));
+  justify-content: center;
+  gap: 8px;
+}
+.memory-grid button { height: 65px; font-size: 24px; padding: 0; }
+#snakeCanvas {
+  width: min(100%, 400px);
+  background: #080d15;
+  border: 2px solid #39344f;
+}
+.status { color: #c4b5fd; min-height: 25px; }
+footer {
+  text-align: center;
+  padding: 25px;
+  color: var(--muted);
+  border-top: 1px solid #252a40;
+}
+@media (max-width: 500px) {
+  header { padding: 18px 5%; }
+  main { padding-left: 5%; padding-right: 5%; }
+  .hero { padding: 45px 5% 30px; }
+  .board { grid-template-columns: repeat(3, 72px); }
+  .cell { height: 72px; }
+}
+</style>
 </head>
-
 <body>
-  <div id="hud">
-    <strong>☁️ SKY JUMPER</strong><br />
-    🪙 Coins: <span id="coins">0</span><br />
-    🏁 Checkpoint: <span id="checkpoint">1</span>
+
+<header>
+  <div class="logo">🎮 Game<span>Zone</span></div>
+  <nav>
+    <a href="#games">Games</a>
+    <a href="#about">About</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <h1>Your next <span>favorite game</span></h1>
+  <p>Play fun mini-games anytime, anywhere. No downloads needed.</p>
+  <input id="search" class="search" placeholder="🔎 Search games..." aria-label="Search games">
+</section>
+
+<main id="games">
+  <h2 class="section-title">Explore Games</h2>
+  <div class="filters">
+    <button class="filter active" data-category="All">All Games</button>
+    <button class="filter" data-category="Puzzle">Puzzle</button>
+    <button class="filter" data-category="Arcade">Arcade</button>
+    <button class="filter" data-category="Classic">Classic</button>
   </div>
 
-  <div id="help">
-    WASD / Arrow Keys: Move · SPACE: Jump · R: Restart
+  <div class="grid" id="gameGrid">
+    <article class="game-card" data-name="Tic Tac Toe" data-category="Classic">
+      <div class="cover">❌</div>
+      <div class="card-content">
+        <span class="tag">CLASSIC</span><h3>Tic-Tac-Toe</h3>
+        <p>Challenge a friend or play by yourself.</p>
+        <button class="primary" onclick="launch('tic')">Play Now →</button>
+      </div>
+    </article>
+
+    <article class="game-card" data-name="Snake" data-category="Arcade">
+      <div class="cover">🐍</div>
+      <div class="card-content">
+        <span class="tag">ARCADE</span><h3>Snake</h3>
+        <p>Eat food, grow longer, and avoid crashing.</p>
+        <button class="primary" onclick="launch('snake')">Play Now →</button>
+      </div>
+    </article>
+
+    <article class="game-card" data-name="Memory Match" data-category="Puzzle">
+      <div class="cover">🧠</div>
+      <div class="card-content">
+        <span class="tag">PUZZLE</span><h3>Memory Match</h3>
+        <p>Find matching emoji pairs with fewer moves.</p>
+        <button class="primary" onclick="launch('memory')">Play Now →</button>
+      </div>
+    </article>
+
+    <article class="game-card" data-name="Rock Paper Scissors" data-category="Classic">
+      <div class="cover">✊</div>
+      <div class="card-content">
+        <span class="tag">CLASSIC</span><h3>Rock Paper Scissors</h3>
+        <p>Can you beat the computer?</p>
+        <button class="primary" onclick="launch('rps')">Play Now →</button>
+      </div>
+    </article>
   </div>
 
-  <div id="mobile">
-    <div class="pad">
-      <span></span>
-      <button data-key="w">▲</button>
-      <span></span>
-      <button data-key="a">◀</button>
-      <button data-key="s">▼</button>
-      <button data-key="d">▶</button>
+  <section id="playArea">
+    <h2 id="gameTitle">Game</h2>
+    <div id="gameContent"></div>
+    <button onclick="closeGame()">✕ Close Game</button>
+  </section>
+
+  <section id="about" style="margin-top:55px">
+    <h2>About GameZone</h2>
+    <p style="color:var(--muted);line-height:1.8">
+      Welcome to GameZone! Discover free browser games, challenge your
+      skills, and have fun. This site is built with HTML, CSS, and JavaScript.
+    </p>
+  </section>
+</main>
+
+<footer>🎮 GameZone · Made for gamers, by gamers</footer>
+
+<script>
+const area = document.getElementById("playArea");
+const content = document.getElementById("gameContent");
+const title = document.getElementById("gameTitle");
+let cleanup = () => {};
+
+document.getElementById("search").addEventListener("input", filterGames);
+
+document.querySelectorAll(".filter").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".filter").forEach(b => b.classList.remove("active"));
+    button.classList.add("active");
+    filterGames();
+  });
+});
+
+function filterGames() {
+  const query = document.getElementById("search").value.toLowerCase();
+  const category = document.querySelector(".filter.active").dataset.category;
+  document.querySelectorAll(".game-card").forEach(card => {
+    const matchesText = card.dataset.name.toLowerCase().includes(query);
+    const matchesCategory = category === "All" || card.dataset.category === category;
+    card.style.display = matchesText && matchesCategory ? "" : "none";
+  });
+}
+
+function launch(game) {
+  cleanup();
+  cleanup = () => {};
+  area.style.display = "block";
+  area.scrollIntoView({ behavior: "smooth", block: "start" });
+  content.innerHTML = "";
+
+  if (game === "tic") startTic();
+  if (game === "snake") startSnake();
+  if (game === "memory") startMemory();
+  if (game === "rps") startRPS();
+}
+
+function closeGame() {
+  cleanup();
+  cleanup = () => {};
+  area.style.display = "none";
+  content.innerHTML = "";
+}
+
+function setGame(name, html) {
+  title.textContent = name;
+  content.innerHTML = html;
+}
+
+function startTic() {
+  setGame("❌ Tic-Tac-Toe", `
+    <p class="status" id="ticStatus">X's turn</p>
+    <div class="board" id="ticBoard"></div>
+    <button onclick="startTic()">Restart</button>
+  `);
+
+  let board = Array(9).fill("");
+  let turn = "X";
+  let done = false;
+  const wins = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  const el = document.getElementById("ticBoard");
+  const status = document.getElementById("ticStatus");
+
+  board.forEach((_, i) => {
+    const cell = document.createElement("button");
+    cell.className = "cell";
+    cell.setAttribute("aria-label", "Cell " + (i + 1));
+    cell.onclick = () => {
+      if (done || board[i]) return;
+      board[i] = turn;
+      cell.textContent = turn;
+      if (wins.some(line => line.every(n => board[n] === turn))) {
+        status.textContent = turn + " wins! 🎉";
+        done = true;
+      } else if (board.every(Boolean)) {
+        status.textContent = "It's a draw!";
+        done = true;
+      } else {
+        turn = turn === "X" ? "O" : "X";
+        status.textContent = turn + "'s turn";
+      }
+    };
+    el.appendChild(cell);
+  });
+}
+
+function startRPS() {
+  setGame("✊ Rock Paper Scissors", `
+    <p>Choose your move!</p>
+    <div>
+      <button onclick="playRPS('Rock')">✊ Rock</button>
+      <button onclick="playRPS('Paper')">✋ Paper</button>
+      <button onclick="playRPS('Scissors')">✌️ Scissors</button>
     </div>
-    <button id="jump">JUMP</button>
-  </div>
+    <p id="rpsResult" class="status">First to play wins!</p>
+    <p id="rpsScore">You: 0 | Computer: 0</p>
+  `);
+  window.rpsYou = 0;
+  window.rpsComputer = 0;
+}
 
-  <div id="message">
-    <h1 id="messageTitle">YOU WIN!</h1>
-    <p id="messageText">You reached the sky island!</p>
-    <button id="restart">PLAY AGAIN</button>
-  </div>
+function playRPS(player) {
+  const choices = ["Rock", "Paper", "Scissors"];
+  const computer = choices[Math.floor(Math.random() * 3)];
+  let result;
+  if (player === computer) result = "It's a tie!";
+  else if (
+    (player === "Rock" && computer === "Scissors") ||
+    (player === "Paper" && computer === "Rock") ||
+    (player === "Scissors" && computer === "Paper")
+  ) {
+    result = "You win! 🎉";
+    window.rpsYou++;
+  } else {
+    result = "Computer wins!";
+    window.rpsComputer++;
+  }
+  document.getElementById("rpsResult").textContent =
+    `You chose ${player}. Computer chose ${computer}. ${result}`;
+  document.getElementById("rpsScore").textContent =
+    `You: ${window.rpsYou} | Computer: ${window.rpsComputer}`;
+}
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
-      }
-    }
-  </script>
+function startMemory() {
+  setGame("🧠 Memory Match", `
+    <p id="memoryStatus" class="status">Find all 8 pairs!</p>
+    <p id="memoryMoves">Moves: 0</p>
+    <div class="memory-grid" id="memoryGrid"></div>
+    <button onclick="startMemory()">Restart</button>
+  `);
 
-  <script type="module">
-    import * as THREE from "three";
+  const emojis = ["🐱","🐶","🦊","🐸","🐼","🦁","🐵","🐰"];
+  const cards = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
+  const grid = document.getElementById("memoryGrid");
+  const status = document.getElementById("memoryStatus");
+  const movesText = document.getElementById("memoryMoves");
+  let first = null, lock = false, matched = 0, moves = 0;
+  const buttons = [];
 
-    // ---------------------------------
-    // SCENE AND CAMERA
-    // ---------------------------------
+  cards.forEach((emoji, i) => {
+    const b = document.createElement("button");
+    b.textContent = "❔";
+    b.setAttribute("aria-label", "Hidden card " + (i + 1));
+    b.onclick = () => {
+      if (lock || b.dataset.open === "yes" || b.dataset.matched === "yes") return;
+      b.textContent = emoji;
+      b.dataset.open = "yes";
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x83d9ff);
-    scene.fog = new THREE.Fog(0x83d9ff, 35, 110);
-
-    const camera = new THREE.PerspectiveCamera(
-      65, window.innerWidth / window.innerHeight, 0.1, 200
-    );
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    document.body.appendChild(renderer.domElement);
-
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x6488a8, 2));
-
-    const sun = new THREE.DirectionalLight(0xffffff, 3);
-    sun.position.set(-10, 20, 10);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
-    scene.add(sun);
-
-    // ---------------------------------
-    // MATERIALS
-    // ---------------------------------
-
-    const grassMat = new THREE.MeshStandardMaterial({
-      color: 0x45ce76, roughness: 0.85
-    });
-
-    const dirtMat = new THREE.MeshStandardMaterial({
-      color: 0x926044, roughness: 1
-    });
-
-    const goldMat = new THREE.MeshStandardMaterial({
-      color: 0xffc928, metalness: 0.55, roughness: 0.25
-    });
-
-    const playerMat = new THREE.MeshStandardMaterial({
-      color: 0x3878ff, roughness: 0.4
-    });
-
-    const whiteMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff
-    });
-
-    // ---------------------------------
-    // PLATFORMS
-    // ---------------------------------
-
-    const platforms = [];
-    const coins = [];
-    const checkpoints = [];
-
-    function makePlatform(x, y, z, w, d, color = 0x45ce76) {
-      const group = new THREE.Group();
-      group.position.set(x, y, z);
-
-      const topMat = new THREE.MeshStandardMaterial({
-        color, roughness: 0.85
-      });
-
-      const top = new THREE.Mesh(
-        new THREE.BoxGeometry(w, 0.35, d), topMat
-      );
-      top.position.y = 0;
-      top.castShadow = true;
-      top.receiveShadow = true;
-      group.add(top);
-
-      const dirt = new THREE.Mesh(
-        new THREE.BoxGeometry(w * 0.96, 0.65, d * 0.96),
-        dirtMat
-      );
-      dirt.position.y = -0.48;
-      dirt.castShadow = true;
-      group.add(dirt);
-
-      scene.add(group);
-
-      platforms.push({
-        x, y: y + 0.175, z, w, d, group
-      });
-
-      return { x, y: y + 0.175, z, w, d, group };
-    }
-
-    // Starting island
-    makePlatform(0, 0, 0, 9, 9);
-
-    // Jumping course
-    const course = [
-      [0, 0.5, -9, 4.5, 4.5],
-      [4, 1.0, -16, 4, 4],
-      [9, 1.7, -23, 4, 4],
-      [4, 2.4, -30, 4, 4],
-      [-2, 3.0, -37, 4, 4],
-      [-8, 3.8, -44, 4, 4],
-      [-5, 4.5, -51, 4, 4],
-      [2, 5.2, -58, 4.5, 4.5],
-      [8, 6.0, -65, 5, 5],
-      [8, 6.0, -73, 7, 7]
-    ];
-
-    for (let i = 0; i < course.length; i++) {
-      const [x, y, z, w, d] = course[i];
-      const p = makePlatform(x, y, z, w, d);
-      if (i === course.length - 1) checkpoints.push(p);
-    }
-
-    // ---------------------------------
-    // PLAYER
-    // ---------------------------------
-
-    const player = new THREE.Group();
-
-    const body = new THREE.Mesh(
-      new THREE.BoxGeometry(0.85, 1.15, 0.7),
-      playerMat
-    );
-    body.position.y = 0.05;
-    body.castShadow = true;
-    player.add(body);
-
-    // Cute eyes
-    for (const x of [-0.2, 0.2]) {
-      const eye = new THREE.Mesh(
-        new THREE.SphereGeometry(0.075, 12, 12),
-        whiteMat
-      );
-      eye.position.set(x, 0.22, 0.355);
-      player.add(eye);
-    }
-
-    const pupilMat = new THREE.MeshStandardMaterial({
-      color: 0x14213d
-    });
-
-    for (const x of [-0.2, 0.2]) {
-      const pupil = new THREE.Mesh(
-        new THREE.SphereGeometry(0.035, 10, 10),
-        pupilMat
-      );
-      pupil.position.set(x, 0.22, 0.42);
-      player.add(pupil);
-    }
-
-    scene.add(player);
-
-    const PLAYER_HEIGHT = 1.25;
-    const PLAYER_RADIUS = 0.38;
-
-    let velocity = new THREE.Vector3();
-    let grounded = false;
-    let coinsCollected = 0;
-    let lastSafe = new THREE.Vector3(0, 1.1, 0);
-    let won = false;
-    let previousBottom = 0;
-
-    function resetPlayer() {
-      player.position.copy(lastSafe);
-      velocity.set(0, 0, 0);
-      grounded = false;
-      won = false;
-      document.getElementById("message").style.display = "none";
-    }
-
-    // ---------------------------------
-    // COINS
-    // ---------------------------------
-
-    function makeCoin(x, y, z) {
-      const coin = new THREE.Mesh(
-        new THREE.TorusGeometry(0.38, 0.12, 10, 20),
-        goldMat
-      );
-
-      coin.position.set(x, y, z);
-      coin.castShadow = true;
-      scene.add(coin);
-      coins.push({ mesh: coin, collected: false });
-    }
-
-    [
-      [0, 2.2, -5],
-      [0, 2.8, -9],
-      [4, 3.2, -16],
-      [9, 3.9, -23],
-      [4, 4.6, -30],
-      [-2, 5.2, -37],
-      [-8, 6.0, -44],
-      [-5, 6.7, -51],
-      [2, 7.4, -58],
-      [8, 8.3, -65]
-    ].forEach(([x, y, z]) => makeCoin(x, y, z));
-
-    // ---------------------------------
-    // GOAL PORTAL
-    // ---------------------------------
-
-    const portal = new THREE.Mesh(
-      new THREE.TorusGeometry(1.35, 0.18, 16, 48),
-      new THREE.MeshStandardMaterial({
-        color: 0xff65e8,
-        emissive: 0xb72eff,
-        emissiveIntensity: 2
-      })
-    );
-
-    portal.position.set(8, 8.0, -73);
-    portal.castShadow = true;
-    scene.add(portal);
-
-    // ---------------------------------
-    // CLOUDS
-    // ---------------------------------
-
-    const cloudMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff, roughness: 1
-    });
-
-    for (let i = 0; i < 35; i++) {
-      const cloud = new THREE.Group();
-
-      const x = (Math.random() - 0.5) * 90;
-      const y = 1 + Math.random() * 20;
-      const z = -Math.random() * 95;
-
-      for (let j = 0; j < 4; j++) {
-        const puff = new THREE.Mesh(
-          new THREE.SphereGeometry(
-            0.8 + Math.random() * 1.2, 10, 8
-          ),
-          cloudMat
-        );
-        puff.position.set(j * 1.15, Math.random() * 0.5, 0);
-        cloud.add(puff);
+      if (!first) {
+        first = { button: b, emoji };
+        return;
       }
 
-      cloud.position.set(x, y, z);
-      scene.add(cloud);
+      moves++;
+      movesText.textContent = "Moves: " + moves;
+
+      if (first.emoji === emoji) {
+        first.button.dataset.matched = "yes";
+        b.dataset.matched = "yes";
+        matched += 2;
+        first = null;
+        if (matched === cards.length) status.textContent = `You won in ${moves} moves! 🎉`;
+      } else {
+        const previous = first.button;
+        first = null;
+        lock = true;
+        setTimeout(() => {
+          previous.textContent = "❔";
+          b.textContent = "❔";
+          delete previous.dataset.open;
+          delete b.dataset.open;
+          lock = false;
+        }, 700);
+      }
+    };
+    buttons.push(b);
+    grid.appendChild(b);
+  });
+
+  cleanup = () => {};
+}
+
+function startSnake() {
+  setGame("🐍 Snake", `
+    <p class="status" id="snakeStatus">Use arrow keys or the buttons below.</p>
+    <p id="snakeScore">Score: 0</p>
+    <canvas id="snakeCanvas" width="400" height="400"></canvas>
+    <div style="margin-top:12px">
+      <div><button onclick="snakeTurn(0,-1)">⬆️</button></div>
+      <div>
+        <button onclick="snakeTurn(-1,0)">⬅️</button>
+        <button onclick="snakeTurn(0,1)">⬇️</button>
+        <button onclick="snakeTurn(1,0)">➡️</button>
+      </div>
+    </div>
+    <button onclick="startSnake()">Restart</button>
+  `);
+
+  const canvas = document.getElementById("snakeCanvas");
+  const ctx = canvas.getContext("2d");
+  const cells = 20, size = 20;
+  let snake, food, dx, dy, score, timer, stopped;
+
+  function reset() {
+    snake = [{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+    dx = 1; dy = 0; score = 0; stopped = false;
+    food = randomFood();
+    document.getElementById("snakeScore").textContent = "Score: 0";
+    document.getElementById("snakeStatus").textContent = "Good luck!";
+    draw();
+  }
+
+  function randomFood() {
+    let p;
+    do {
+      p = {x:Math.floor(Math.random()*cells), y:Math.floor(Math.random()*cells)};
+    } while (snake && snake.some(s => s.x === p.x && s.y === p.y));
+    return p;
+  }
+
+  function draw() {
+    ctx.fillStyle = "#080d15";
+    ctx.fillRect(0,0,400,400);
+    ctx.fillStyle = "#ef476f";
+    ctx.fillRect(food.x*size,food.y*size,size-2,size-2);
+    snake.forEach((p,i) => {
+      ctx.fillStyle = i === 0 ? "#a78bfa" : "#6d4bd1";
+      ctx.fillRect(p.x*size,p.y*size,size-2,size-2);
+    });
+  }
+
+  function step() {
+    if (stopped) return;
+    const head = {x:snake[0].x+dx,y:snake[0].y+dy};
+    if (head.x<0 || head.x>=cells || head.y<0 || head.y>=cells ||
+        snake.some(p => p.x===head.x && p.y===head.y)) {
+      stopped = true;
+      document.getElementById("snakeStatus").textContent = "Game over! Press Restart.";
+      return;
     }
-
-    // ---------------------------------
-    // INPUT
-    // ---------------------------------
-
-    const keys = {};
-
-    window.addEventListener("keydown", (e) => {
-      const k = e.key.toLowerCase();
-      keys[k] = true;
-
-      if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"]
-        .includes(k)) e.preventDefault();
-
-      if (k === " " && grounded && !won) {
-        velocity.y = 10.5;
-        grounded = false;
-      }
-
-      if (k === "r") resetPlayer();
-    });
-
-    window.addEventListener("keyup", (e) => {
-      keys[e.key.toLowerCase()] = false;
-    });
-
-    document.querySelectorAll("[data-key]").forEach((button) => {
-      const k = button.dataset.key;
-
-      const down = (e) => {
-        e.preventDefault();
-        keys[k] = true;
-      };
-
-      const up = (e) => {
-        e.preventDefault();
-        keys[k] = false;
-      };
-
-      button.addEventListener("pointerdown", down);
-      button.addEventListener("pointerup", up);
-      button.addEventListener("pointercancel", up);
-      button.addEventListener("pointerleave", up);
-    });
-
-    const jumpButton = document.getElementById("jump");
-
-    jumpButton.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      if (grounded && !won) {
-        velocity.y = 10.5;
-        grounded = false;
-      }
-    });
-
-    document.getElementById("restart").addEventListener("click", () => {
-      coinsCollected = 0;
-      document.getElementById("coins").textContent = "0";
-
-      coins.forEach((c) => {
-        c.collected = false;
-        c.mesh.visible = true;
-      });
-
-      lastSafe.set(0, 1.1, 0);
-      resetPlayer();
-    });
-
-    // ---------------------------------
-    // GAME LOOP AND PHYSICS
-    // ---------------------------------
-
-    const clock = new THREE.Clock();
-
-    function finishGame() {
-      if (won) return;
-      won = true;
-      velocity.set(0, 0, 0);
-
-      document.getElementById("messageTitle").textContent =
-        "YOU WIN! 🏆";
-
-      document.getElementById("messageText").textContent =
-        `You collected ${coinsCollected} coins! Great job!`;
-
-      document.getElementById("message").style.display = "flex";
+    snake.unshift(head);
+    if (head.x===food.x && head.y===food.y) {
+      score++;
+      document.getElementById("snakeScore").textContent = "Score: " + score;
+      food = randomFood();
+    } else {
+      snake.pop();
     }
+    draw();
+  }
 
-    function animate() {
-      requestAnimationFrame(animate);
+  reset();
+  timer = setInterval(step, 125);
 
-      const dt = Math.min(clock.getDelta(), 0.04);
-      const t = clock.elapsedTime;
+  function keyHandler(e) {
+    const map = {
+      ArrowUp:[0,-1], ArrowDown:[0,1],
+      ArrowLeft:[-1,0], ArrowRight:[1,0]
+    };
+    if (!map[e.key]) return;
+    e.preventDefault();
+    const [x,y] = map[e.key];
+    if (x !== -dx || y !== -dy) { dx=x; dy=y; }
+  }
 
-      portal.rotation.z = Math.sin(t * 1.5) * 0.15;
-      portal.rotation.y += dt * 0.7;
+  window.snakeTurn = (x,y) => {
+    if (x !== -dx || y !== -dy) { dx=x; dy=y; }
+  };
 
-      for (const c of coins) {
-        if (!c.collected) {
-          c.mesh.rotation.y += dt * 2.5;
-          c.mesh.position.y += Math.sin(t * 3 + c.mesh.position.z) * dt * 0.25;
-
-          // Return to its original height is handled by its bobbing offset
-          // being small enough to keep coins near their intended position.
-          if (player.position.distanceTo(c.mesh.position) < 1.25) {
-            c.collected = true;
-            c.mesh.visible = false;
-            coinsCollected++;
-            document.getElementById("coins").textContent =
-              coinsCollected;
-          }
-        }
-      }
-
-      if (!won) {
-        const forward =
-          (keys["w"] || keys["arrowup"] ? 1 : 0) -
-          (keys["s"] || keys["arrowdown"] ? 1 : 0);
-
-        const sideways =
-          (keys["d"] || keys["arrowright"] ? 1 : 0) -
-          (keys["a"] || keys["arrowleft"] ? 1 : 0);
-
-        const direction = new THREE.Vector3(sideways, 0, -forward);
-
-        if (direction.lengthSq() > 0) {
-          direction.normalize();
-          velocity.x = direction.x * 6.5;
-          velocity.z = direction.z * 6.5;
-          player.rotation.y = Math.atan2(direction.x, direction.z);
-        } else {
-          velocity.x *= Math.pow(0.0005, dt);
-          velocity.z *= Math.pow(0.0005, dt);
-        }
-
-        previousBottom = player.position.y - PLAYER_HEIGHT / 2;
-
-        velocity.y -= 24 * dt;
-
-        player.position.x += velocity.x * dt;
-        player.position.z += velocity.z * dt;
-        player.position.y += velocity.y * dt;
-
-        grounded = false;
-
-        // Land only when falling onto the top of a platform.
-        if (velocity.y <= 0) {
-          for (const p of platforms) {
-            const bottom = player.position.y - PLAYER_HEIGHT / 2;
-
-            const overlapsX =
-              Math.abs(player.position.x - p.x) <
-              p.w / 2 + PLAYER_RADIUS;
-
-            const overlapsZ =
-              Math.abs(player.position.z - p.z) <
-              p.d / 2 + PLAYER_RADIUS;
-
-            if (
-              overlapsX &&
-              overlapsZ &&
-              previousBottom >= p.y - 0.08 &&
-              bottom <= p.y
-            ) {
-              player.position.y = p.y + PLAYER_HEIGHT / 2;
-              velocity.y = 0;
-              grounded = true;
-
-              lastSafe.set(
-                player.position.x,
-                player.position.y,
-                player.position.z
-              );
-
-              break;
-            }
-          }
-        }
-
-        // Fall recovery
-        if (player.position.y < -12) {
-          resetPlayer();
-        }
-
-        // Win condition
-        if (player.position.distanceTo(portal.position) < 2.0) {
-          finishGame();
-        }
-
-        // Camera follows from behind and above.
-        const targetCamera = new THREE.Vector3(
-          player.position.x,
-          player.position.y + 6,
-          player.position.z + 11
-        );
-
-        camera.position.lerp(targetCamera, 1 - Math.pow(0.001, dt));
-
-        camera.lookAt(
-          player.position.x,
-          player.position.y + 0.5,
-          player.position.z - 2
-        );
-
-        // Track progress along the course.
-        const progress = Math.max(
-          1,
-          Math.min(11, Math.floor((-player.position.z) / 7) + 1)
-        );
-
-        document.getElementById("checkpoint").textContent = progress;
-      }
-
-      renderer.render(scene, camera);
-    }
-
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    resetPlayer();
-    animate();
-  </script>
+  document.addEventListener("keydown", keyHandler);
+  cleanup = () => {
+    clearInterval(timer);
+    document.removeEventListener("keydown", keyHandler);
+    window.snakeTurn = () => {};
+  };
+}
+</script>
 </body>
 </html>
